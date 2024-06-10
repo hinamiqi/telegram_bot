@@ -72,12 +72,43 @@ export class Repository {
         return findResult;
     }
 
-    async getLastExerciseSet(userId: number, exerciseName: string): Promise<WithId<ISet> | null> {
+    async getLastExerciseWorkout(userId: number, exerciseName: string): Promise<WithId<ISet>[]> {
         const query = {
             userId: { $eq: userId },
             exerciseName: { $eq: exerciseName },
         };
-        const result = this.setsCollection.find(query).sort({date: -1}).limit(1);
-        return result.next();
+        const lastOne = this.setsCollection.find(query).sort({date: -1}).limit(1);
+        const lastDate = (await lastOne.next())?.date;
+        if (!lastDate) {
+            return [];
+        }
+        const query2 = {
+            userId: { $eq: userId },
+            exerciseName: { $eq: exerciseName },
+            date: { $gt: new Date(lastDate.setHours(0, 0, 0)), $lt: new Date(lastDate.setHours(23, 59, 59)) },
+        };
+        return this.setsCollection.find(query2).toArray();
+    }
+
+    async getLastWorkout(userId: number): Promise<WithId<ISet>[]> {
+        const query = {
+            userId: { $eq: userId },
+        };
+        const lastOne = this.setsCollection.find(query).sort({date: -1}).limit(1);
+        const lastDate = (await lastOne.next())?.date;
+        if (!lastDate || this.isCurrentDate(lastDate)) {
+            return [];
+        }
+        const query2 = {
+            userId: { $eq: userId },
+            date: { $gt: new Date(lastDate.setHours(0, 0, 0)), $lt: new Date(lastDate.setHours(23, 59, 59)) },
+        };
+        return this.setsCollection.find(query2).toArray();
+    }
+
+    private isCurrentDate(date: Date): boolean {
+        const d1 = new Date(date.setHours(0, 0, 0, 0)).getTime();
+        const d2 = new Date(new Date().setHours(0, 0, 0, 0)).getTime();
+        return d1 == d2;
     }
 }

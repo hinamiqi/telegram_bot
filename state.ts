@@ -49,7 +49,7 @@ export class StateManager {
     }
 
     get currentWeightDescription(): string {
-        return `\\(current: ${this.currentWeight}kg\\)`;
+        return `\\(current weight: ${this.currentWeight}kg\\)`;
     }
 
     private readonly menuConfig: IMenuConfig = MENU_CONFIG;
@@ -65,10 +65,10 @@ export class StateManager {
         this.userId = userId;
         if (!this.repository.isConnected) {
             await this.repository.connect();
-        } 
-        if (this.currentMenu.isExercise) {
-            const lastSet = await this.repository.getLastExerciseSet(this.userId, this.currentMenu.name);
-            this.lastExerciseSetDescription = `\nLast time: ${lastSet?.weight}kg x ${lastSet?.reps}`;
+        }
+        const lastWorkoutSets = await this.repository.getLastWorkout(this.userId);
+        if (lastWorkoutSets.length) {
+            this.lastExerciseSetDescription = `Last workout: ${MarkupHelper.getWorkoutText(lastWorkoutSets)}`;
         }
         await this.updateWorkout();
     }
@@ -100,9 +100,9 @@ export class StateManager {
             this.currentMenu = targetMenu;
         }
         if (this.currentMenu.isExercise) {
-            const lastSet = await this.repository.getLastExerciseSet(this.userId, this.currentMenu.name);
-            if (!!lastSet) {
-                this.lastExerciseSetDescription = `\nLast time: ${lastSet?.weight}kg x ${lastSet?.reps}`;
+            const lastSets = await this.repository.getLastExerciseWorkout(this.userId, this.currentMenu.name);
+            if (!!lastSets) {
+                this.lastExerciseSetDescription = `\nLast time: ${MarkupHelper.getRepsLine(lastSets)}`;
             }
         }
     }

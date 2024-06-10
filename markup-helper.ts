@@ -4,6 +4,8 @@ import { InlineKeyboard } from "grammy";
 import { GO_BACK_BTN_ID, TOGGLE_MODE_ACTION } from "./constants/trigger.const";
 import { StateManager } from "./state";
 import { IMarkup } from "./interfaces/markup.interface";
+import { ISet } from "./interfaces/set.interface";
+import { DASH } from "./constants/constants";
 
 export default class MarkupHelper {
     public static getMenuMarkup(state: StateManager): IMarkup {
@@ -23,6 +25,39 @@ export default class MarkupHelper {
         };
     }
 
+    public static getRepsLine(exerciseSets: ISet[]): string {
+        const weights = new Map<number, ISet[]>();
+        for (let s of exerciseSets) {
+            const curr = weights.get(s.weight) || [];
+            weights.set(s.weight, curr.concat(s));
+        }
+        const lines: string[] = [];
+        weights.forEach((sets, weight) => {
+            lines.push(`${weight}kg ${sets.map((s) => s.reps).join('/')}`);
+        });
+        return lines.join('; ').concat('\\.');
+    }
+
+    public static getWorkoutText(exerciseSets: ISet[]): string {
+        let m = '';
+        const exercises = new Map<string, ISet[]>();
+        for (let e of exerciseSets) {
+            const curr = exercises.get(e.exerciseName) || [];
+            exercises.set(e.exerciseName, curr.concat(e));
+        }
+        exercises.forEach((sets, exerciseName) => {
+            m += MarkupHelper.getExerciseLine(exerciseName, sets);
+        });
+        if (!m.length) {
+            m = DASH;
+        }
+        return m;
+    }
+
+    public static getExerciseLine(exerciseName: string, sets: ISet[]) {
+        return `*${exerciseName}* ${MarkupHelper.getRepsLine(sets)}\n`;
+    }
+
     private static getKeyboardWithButtonList(buttons: { id: string; name: string }[], isBackNeeded = false): InlineKeyboard {
         const keyboard = new InlineKeyboard();
         let i = 1;
@@ -39,4 +74,5 @@ export default class MarkupHelper {
         }
         return keyboard;
     }
+
 }
