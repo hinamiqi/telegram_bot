@@ -1,22 +1,21 @@
-import { DASH } from "./constants";
-
-export interface ISet {
-    exerciseName: string;
-    weight: number;
-    reps: number;
-}
+import { DASH } from "./constants/constants";
+import { ISet } from "./interfaces/set.interface";
 
 const HEADER = `*Today's workout:*`;
 
 export class Workout {
     private sets: ISet[] = [];
 
-    public addSet(set: ISet) {
+    public addSet(set: ISet): ISet {
         this.sets.push(set);
+        return set;
+    }
+
+    public setSets(sets: ISet[]): void {
+        this.sets = sets;
     }
 
     public toString(): string {
-        // let m = HEADER + '\n';
         let m = '';
         const exercises = new Map<string, ISet[]>();
         for (let e of this.sets) {
@@ -46,7 +45,6 @@ export class Workout {
         }
         const lines: string[] = [];
         weights.forEach((sets, weight) => {
-            // console.log(sets);
             lines.push(`${weight}kg: ${sets.map((s) => s.reps).join(', ')}`);
         });
         return lines.join('; ').concat('\\.');

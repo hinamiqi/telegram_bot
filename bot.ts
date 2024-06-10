@@ -1,71 +1,64 @@
-import { Bot, CallbackQueryContext, Context, InlineKeyboard, Keyboard } from "grammy";
-import { StateManager } from "./state";
-import { IMenuConfig } from "./interfaces/menu-config.interface";
-import InlineKeyboardBuilder from "./inline-keyboard-builder";
-import { GO_BACK_BTN_ID } from "./constants";
-import { ParseMode } from "grammy/types";
+import { Bot, CallbackQueryContext, Context } from "grammy";
 
-const bot = new Bot('7033893832:AAHaJMv8EEt45Wp2vRbZW7NZf94puaBIU00');
-const state = new StateManager();
+import { StateManager } from "./state";
+import { GO_BACK_BTN_ID, MENU_ITEM, MESSAGE, START, TOGGLE_MODE_ACTION } from "./constants/trigger.const";
+import MarkupHelper from "./markup-helper";
+import { SECRET } from "./constants/secret";
+
+const bot = new Bot(SECRET);
+let state: StateManager = new StateManager();
 
 let lastCtxMessage: CallbackQueryContext<Context>;
 
-const getMenuMarkup = (state: StateManager): { parse_mode: ParseMode; reply_markup: InlineKeyboard } => ({
-  parse_mode: "MarkdownV2",
-  reply_markup: InlineKeyboardBuilder.getKeyboardWithButtonList(state.currentMenu.children?.map(({ id, name }) => ({ id, name })) || [], !!state.currentMenu.parent),
+// COMMANDS
+bot.command(START, async (ctx) => {
+  await state.startWorkout(ctx.message?.from.id);
+  await ctx.reply(state.getMessage(), MarkupHelper.getMenuMarkup(state));
 });
 
-const getExerciseMarkup = (state: StateManager): { parse_mode: ParseMode; reply_markup: InlineKeyboard } => ({
-  parse_mode: "MarkdownV2",
-  reply_markup: new InlineKeyboard().text('Change weight').row().text('Add comment').row().text('🔙', GO_BACK_BTN_ID),
-});
+// bot.command("stat", async (ctx) => {
+//     // IMPLEMENT this
+// });
 
-// This handler sends a menu with the inline buttons we pre-assigned above
-bot.command('start', async (ctx) => {
-    await ctx.reply(state.message, getMenuMarkup(state));
-});
 
-bot.callbackQuery(/[A-z_]+__menu/, async (ctx) => {
-  state.selectSubMenu(ctx.callbackQuery.data);
-  lastCtxMessage = ctx;
-  await ctx.editMessageText(state.message, getMenuMarkup(state));
+// CALLBACK QUERIES
+bot.callbackQuery(MENU_ITEM, async (ctx) => {
+    lastCtxMessage = ctx;
+    await state.selectSubMenu(ctx.callbackQuery.data);
+    await ctx.editMessageText(state.getMessage(), state.getCurrentMenuMarkup());
 });
 
 bot.callbackQuery(GO_BACK_BTN_ID, async (ctx) => {
+  lastCtxMessage = ctx;
   state.goBack();
-  lastCtxMessage = ctx;
-  await ctx.editMessageText(state.message, getMenuMarkup(state));
+  await ctx.editMessageText(state.getMessage(), state.getCurrentMenuMarkup());
 });
 
-bot.callbackQuery(/[A-z_]+__exercise/, async (ctx) => {
-  state.selectSubMenu(ctx.callbackQuery.data);
+bot.callbackQuery(TOGGLE_MODE_ACTION, async (ctx) => {
   lastCtxMessage = ctx;
-  await ctx.editMessageText(state.message, getExerciseMarkup(state));
+  state.toggleWeightMode();
+  await ctx.editMessageText(state.getMessage(), state.getCurrentMenuMarkup());
 });
 
-bot.on("message", async (ctx) => {
-  //Print to console
+bot.on(MESSAGE, async (ctx) => {
   console.log(
     `${ctx.from.first_name} wrote ${
       "text" in ctx.message ? ctx.message.text : ""
     }`,
   );
-  
+
   if (state.currentMenu.isExercise) {
-    state.addSet(state.currentMenu.name, parseInt(ctx.message?.text || "0"), 10)
+    if (state.isWeightMode) {
+      state.changeWeight(ctx.message?.text);
+    } else {
+      await state.addSet(state.currentMenu.name, ctx.message?.text)
+    }
   }
 
   await ctx.deleteMessage();
 
-  await lastCtxMessage?.editMessageText(state.message, getExerciseMarkup(state));
+  await lastCtxMessage?.editMessageText(state.getMessage(), MarkupHelper.getExerciseMarkup(state));
 });
 
 //Start the Bot
 bot.start();
-
-
-// console.log(state.toString());
-// state.selectSubMenu('chest__bodypart');
-// console.log(state.toString());
-// state.goBack();
-// console.log(state.toString());

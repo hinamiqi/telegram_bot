@@ -1,6 +1,6 @@
 import { InlineKeyboard } from "grammy"
 
-import { GO_BACK_BTN_ID } from "./constants";
+import { GO_BACK_BTN_ID } from "./constants/trigger.const";
 
 export default class InlineKeyboardBuilder {
     static getKeyboardWithButtonList(buttons: { id: string; name: string }[], isBackNeeded = false): InlineKeyboard {

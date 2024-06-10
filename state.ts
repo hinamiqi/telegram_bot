@@ -1,5 +1,9 @@
-import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, STARTING_MENU_ID } from "./constants";
+import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, EXERCISE_WEIGTH_DESCRIPTION, STARTING_MENU_ID } from "./constants/constants";
+import { MENU_CONFIG } from "./constants/menu-config.const";
+import { IMarkup } from "./interfaces/markup.interface";
 import { IMenuConfig } from "./interfaces/menu-config.interface";
+import MarkupHelper from "./markup-helper";
+import { Repository } from "./repository";
 import { Workout } from "./workout";
 
 export class StateManager {
@@ -7,105 +11,134 @@ export class StateManager {
 
     workout: Workout;
 
+    repository: Repository;
+
+    private currentWeight = 10;
+
+    private lastExerciseSetDescription: string = '\n';
+
+    private _isWeightMode = false;
+
+    get userId(): number {
+        return <number>this._userId;
+    }
+    set userId(userId: number | undefined) {
+        if (!userId) {
+            throw new Error('Не удалось определить userId. Это какая-то херня!');
+        } else {
+            this._userId = userId;
+        }
+    }
+    private _userId: number;
+
     get menu(): IMenuConfig {
         return this.menuConfig;
     }
 
-    get message(): string {
-        return `*Today's workout*\n\n${this.workout.toString()}\n*${this.currentMenu.name}*\n_${this.currentMenu.description}_`;
+    get isWeightMode(): boolean {
+        return this._isWeightMode;
     }
 
-    private menuConfig: IMenuConfig = {
-        id: STARTING_MENU_ID,
-        name: 'Welcome to new workout',
-        description: 'Select bodypart to train',
-        children: [
-            {
-                id: 'chest__menu',
-                name: 'Chest',
-                description: DEFAULT_MENU_DESCRIPTION,
-                children: [
-                    {
-                        id: 'flat_bb_bench_press__exercise',
-                        name: 'Flat barbell bench press',
-                        description: DEFAULT_EXERCISE_DESCRIPTION,
-                        isExercise: true,
-                    },
-                    {
-                        id: 'incline_df_bench_press__exercise',
-                        name: 'Incline dumbbell bench press',
-                        description: DEFAULT_EXERCISE_DESCRIPTION,
-                        isExercise: true,
-                    },
-                    {
-                        id: 'dips__exercise',
-                        name: 'Dips',
-                        description: DEFAULT_EXERCISE_DESCRIPTION,
-                        isExercise: true,
-                    },
-                    {
-                        id: 'cable_row__exercise',
-                        name: 'Cable row',
-                        description: DEFAULT_EXERCISE_DESCRIPTION,
-                        isExercise: true,
-                    },
-                ],
-            },
-            {
-                id: 'back__menu',
-                name: 'Back',
-                description: DEFAULT_MENU_DESCRIPTION,
-                children: [
-                    {
-                        id: 'pull_up__exercise',
-                        name: 'Pull up',
-                        description: DEFAULT_EXERCISE_DESCRIPTION,
-                        isExercise: true,
-                    },
-                    {
-                        id: 'bb_row__exercise',
-                        name: 'Barbell row',
-                        description: DEFAULT_EXERCISE_DESCRIPTION,
-                        isExercise: true,
-                    },
-                    {
-                        id: 'cable_row__exercise',
-                        name: 'Cable row',
-                        description: DEFAULT_EXERCISE_DESCRIPTION,
-                        isExercise: true,
-                    },
-                ],
-            },
-        ],
-    };
+    get currentMenuDescription(): string {
+        if (this.currentMenu.isExercise) {
+            return this.isWeightMode
+            ? `${EXERCISE_WEIGTH_DESCRIPTION} ${this.currentWeightDescription}`
+            : `${DEFAULT_EXERCISE_DESCRIPTION} ${this.currentWeightDescription}`;
+        }
+        return this.currentMenu.description || '';
+    }
+
+    get currentWeightDescription(): string {
+        return `\\(current: ${this.currentWeight}kg\\)`;
+    }
+
+    private readonly menuConfig: IMenuConfig = MENU_CONFIG;
 
     constructor() {
+        this.workout = new Workout();
+        this.repository = new Repository();
         this.currentMenu = this.menuConfig;
         this.setParentToChildren(this.currentMenu);
-        this.workout = new Workout();
+    }
+
+    async startWorkout(userId: number | undefined): Promise<void> {
+        this.userId = userId;
+        if (!this.repository.isConnected) {
+            await this.repository.connect();
+        } 
+        if (this.currentMenu.isExercise) {
+            const lastSet = await this.repository.getLastExerciseSet(this.userId, this.currentMenu.name);
+            this.lastExerciseSetDescription = `\nLast time: ${lastSet?.weight}kg x ${lastSet?.reps}`;
+        }
+        await this.updateWorkout();
     }
 
     goBack(): void {
         if (this.currentMenu.parent) {
             this.currentMenu = this.currentMenu.parent;
+            this.lastExerciseSetDescription = '\n';
         }
     }
 
-    selectSubMenu(menuId: string): void {
+    getMessage(): string {
+        return `*Today's workout*\n\n${this.workout.toString()}\n*${this.currentMenu.name}*\n_${this.currentMenuDescription}_\n${this.lastExerciseSetDescription}`;
+    }
+
+    getCurrentMenuMarkup(): IMarkup {
+        if (this.currentMenu.isExercise) {
+            return MarkupHelper.getExerciseMarkup(this);
+        } else {
+            return MarkupHelper.getMenuMarkup(this);
+        }
+    }
+
+    async selectSubMenu(menuId: string): Promise<void> {
+        this.lastExerciseSetDescription = '\n';
         const { children } = this.currentMenu;
         const targetMenu = children?.find((c) => c.id === menuId);
         if (targetMenu) {
             this.currentMenu = targetMenu;
         }
+        if (this.currentMenu.isExercise) {
+            const lastSet = await this.repository.getLastExerciseSet(this.userId, this.currentMenu.name);
+            if (!!lastSet) {
+                this.lastExerciseSetDescription = `\nLast time: ${lastSet?.weight}kg x ${lastSet?.reps}`;
+            }
+        }
     }
 
-    addSet(exerciseName: string, reps: number, weight: number): void {
-        this.workout.addSet({ exerciseName, weight, reps });
+    async updateWorkout(): Promise<void> {
+        const findSets = await this.repository.getCurrentWorkout();
+        this.workout.setSets(findSets);
+    }
+
+    async addSet(exerciseName: string, userInput: string | undefined): Promise<void> {
+        const set = this.workout.addSet({
+            userId: this.userId,
+            exerciseName,
+            weight: this.currentWeight,
+            reps: this.parseUserInput(userInput),
+            date: new Date()
+        });
+        console.log(set);
+        await this.repository.saveSet(set);
+    }
+
+    changeWeight(userInput: string | undefined): void {
+        this.currentWeight = this.parseUserInput(userInput);
     }
 
     toString(): string {
         const { name, description, children } = this.currentMenu;
         return `${name}\n${description}\n${children?.map(({ name }) => name).join(" ")}`;
+    }
+
+    getCurrentExercise(): void {
+        this.repository.getExerciseSets(this.currentMenu.name);
+    }
+
+    toggleWeightMode(): void {
+        this._isWeightMode = !this._isWeightMode;
     }
 
     private setParentToChildren(menu: IMenuConfig): void {
@@ -114,5 +147,9 @@ export class StateManager {
             child.parent = menu;
             this.setParentToChildren(child);
         }
+    }
+
+    private parseUserInput(userInput: string | undefined): number {
+        return parseInt(userInput || "0");
     }
 }

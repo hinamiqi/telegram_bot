@@ -12,7 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "grammy": "^1.11.2",
-    "node": "^14.21.3"
+    "mongodb": "^6.7.0",
+    "node": "^16.20.2"
   },
   "devDependencies": {
     "ts-node": "^10.9.1",
