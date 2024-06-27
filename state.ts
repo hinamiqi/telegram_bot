@@ -1,4 +1,5 @@
-import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, EXERCISE_WEIGTH_DESCRIPTION, STARTING_MENU_ID } from "./constants/constants";
+import { BODYPARTS } from "./constants/bodypart.const";
+import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, EXERCISE_WEIGTH_DESCRIPTION, MENU_SUFFIX, STARTING_MENU_ID } from "./constants/constants";
 import { MENU_CONFIG } from "./constants/menu-config.const";
 import { IMarkup } from "./interfaces/markup.interface";
 import { IMenuConfig } from "./interfaces/menu-config.interface";
@@ -13,11 +14,15 @@ export class StateManager {
 
     repository: Repository;
 
+    isAddExerciseMode = false;
+
     private currentWeight = 10;
 
     private lastExerciseSetDescription: string = '\n';
 
     private _isWeightMode = false;
+
+    private readonly menuConfig: IMenuConfig = MENU_CONFIG;
 
     get userId(): number {
         return <number>this._userId;
@@ -40,6 +45,9 @@ export class StateManager {
     }
 
     get currentMenuDescription(): string {
+        if (this.isAddExerciseMode) {
+            return 'Input new exercise name';
+        }
         if (this.currentMenu.isExercise) {
             return this.isWeightMode
             ? `${EXERCISE_WEIGTH_DESCRIPTION} ${this.currentWeightDescription}`
@@ -51,8 +59,6 @@ export class StateManager {
     get currentWeightDescription(): string {
         return `\\(current weight: ${this.currentWeight}kg\\)`;
     }
-
-    private readonly menuConfig: IMenuConfig = MENU_CONFIG;
 
     constructor() {
         this.workout = new Workout();
@@ -84,12 +90,33 @@ export class StateManager {
         return `*Today's workout*\n\n${this.workout.toString()}\n*${this.currentMenu.name}*\n_${this.currentMenuDescription}_\n${this.lastExerciseSetDescription}`;
     }
 
-    getCurrentMenuMarkup(): IMarkup {
+    async getCurrentMenuMarkup(): Promise<IMarkup> {
         if (this.currentMenu.isExercise) {
             return MarkupHelper.getExerciseMarkup(this);
         } else {
+            if (this.currentMenu.id !== STARTING_MENU_ID) {
+                this.currentMenu.children = (await this.repository.getCategoryExercises(<BODYPARTS>this.currentMenu.id)).map((exercise) => ({
+                    id: exercise.id + MENU_SUFFIX,
+                    name: exercise.name,
+                    description: exercise.description || DEFAULT_EXERCISE_DESCRIPTION,
+                    isExercise: true,
+                }));
+            }
+            this.setParentToChildren(this.currentMenu);
             return MarkupHelper.getMenuMarkup(this);
         }
+    }
+
+    async loadChildrenExercises(): Promise<IMenuConfig[]> {
+        if (this.currentMenu.children?.length) {
+            return this.currentMenu.children;
+        }
+        return (await this.repository.getCategoryExercises(<BODYPARTS>this.currentMenu.id)).map((exercise) => ({
+            id: exercise.id + MENU_SUFFIX,
+            name: exercise.name,
+            description: exercise.description || DEFAULT_EXERCISE_DESCRIPTION,
+            isExercise: true,
+        }));
     }
 
     async selectSubMenu(menuId: string): Promise<void> {
@@ -139,6 +166,19 @@ export class StateManager {
 
     toggleWeightMode(): void {
         this._isWeightMode = !this._isWeightMode;
+    }
+
+    toggleAddExerciseMode(): void {
+        this.isAddExerciseMode = !this.isAddExerciseMode;
+    }
+
+    async addNewExercise(exerciseName: string | undefined): Promise<void> {
+        if (!exerciseName) return;
+        await this.repository.addNewExercise({
+            id: exerciseName.toLowerCase().replace(/\s/g, '_'),
+            name: exerciseName,
+            category: this.currentMenu.id,
+        });
     }
 
     private setParentToChildren(menu: IMenuConfig): void {

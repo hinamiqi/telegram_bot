@@ -6,3 +6,5 @@ export const DEFAULT_EXERCISE_DESCRIPTION = 'Add sets';
 export const EXERCISE_WEIGTH_DESCRIPTION = 'Enter new weight value';
 
 export const DASH = '—';
+
+export const MENU_SUFFIX = '__menu';

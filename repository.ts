@@ -1,6 +1,8 @@
 import { Collection, Db, MongoClient, WithId } from "mongodb";
 
 import { ISet } from "./interfaces/set.interface";
+import { IExercise } from "./interfaces/exercise.interface";
+import { BODYPARTS } from "./constants/bodypart.const";
 
 export class Repository {
     private uri = 'mongodb://localhost:27017';
@@ -8,6 +10,7 @@ export class Repository {
     private dbName = 'gymbot-db';
 
     private readonly SET_COLLECTION = 'sets-collection';
+    private readonly EXERCISE_COLLECTION = 'exercise-collection';
 
     private client: MongoClient;
 
@@ -23,6 +26,10 @@ export class Repository {
 
     private get setsCollection(): Collection<ISet> {
         return this.db.collection<ISet>(this.SET_COLLECTION);
+    }
+
+    private get exerciseCollection(): Collection<IExercise> {
+        return this.db.collection<IExercise>(this.EXERCISE_COLLECTION);
     }
 
     constructor() {
@@ -42,6 +49,11 @@ export class Repository {
     async saveSet(set: ISet): Promise<void> {
         const result = await this.setsCollection.insertOne(set);
         console.log(`Saved set with id ${result.insertedId}`);
+    }
+
+    async addNewExercise(exercise: IExercise): Promise<void> {
+        const result = await this.exerciseCollection.insertOne(exercise);
+        console.log(`Added exercise with id ${result.insertedId}`);
     }
 
     async getExerciseSets(exerciseName: string): Promise<void> {
@@ -104,6 +116,13 @@ export class Repository {
             date: { $gt: new Date(lastDate.setHours(0, 0, 0)), $lt: new Date(lastDate.setHours(23, 59, 59)) },
         };
         return this.setsCollection.find(query2).toArray();
+    }
+
+    async getCategoryExercises(category: BODYPARTS): Promise<WithId<IExercise>[]> {
+        const query = {
+            category,
+        };
+        return this.exerciseCollection.find(query).toArray();
     }
 
     private isCurrentDate(date: Date): boolean {

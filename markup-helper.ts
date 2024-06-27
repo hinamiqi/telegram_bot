@@ -1,17 +1,24 @@
-import { ParseMode } from "grammy/types";
 import { InlineKeyboard } from "grammy";
 
-import { GO_BACK_BTN_ID, TOGGLE_MODE_ACTION } from "./constants/trigger.const";
+import { ADD_EXERCISE_BTN_ID, GO_BACK_BTN_ID, TOGGLE_MODE_ACTION } from "./constants/trigger.const";
 import { StateManager } from "./state";
 import { IMarkup } from "./interfaces/markup.interface";
 import { ISet } from "./interfaces/set.interface";
-import { DASH } from "./constants/constants";
+import { DASH, STARTING_MENU_ID } from "./constants/constants";
 
 export default class MarkupHelper {
     public static getMenuMarkup(state: StateManager): IMarkup {
+        let addExerciseButton = null;
+        if (state.currentMenu.id !== STARTING_MENU_ID && !state.currentMenu.isExercise) {
+            addExerciseButton = state.isAddExerciseMode ? 'Cancel adding' : 'Add new...';
+        }
         return {
             parse_mode: "MarkdownV2",
-            reply_markup: MarkupHelper.getKeyboardWithButtonList(state.currentMenu.children?.map(({ id, name }) => ({ id, name })) || [], !!state.currentMenu.parent),
+            reply_markup: MarkupHelper.getKeyboardWithButtonList(
+                state.currentMenu.children?.map(({ id, name }) => ({ id, name })) || [],
+                !!state.currentMenu.parent,
+                addExerciseButton
+            ),
         };
     }
 
@@ -26,6 +33,9 @@ export default class MarkupHelper {
     }
 
     public static getRepsLine(exerciseSets: ISet[]): string {
+        if (!exerciseSets.length) {
+            return `—`;
+        }
         const weights = new Map<number, ISet[]>();
         for (let s of exerciseSets) {
             const curr = weights.get(s.weight) || [];
@@ -58,7 +68,7 @@ export default class MarkupHelper {
         return `*${exerciseName}* ${MarkupHelper.getRepsLine(sets)}\n`;
     }
 
-    private static getKeyboardWithButtonList(buttons: { id: string; name: string }[], isBackNeeded = false): InlineKeyboard {
+    private static getKeyboardWithButtonList(buttons: { id: string; name: string }[], isBackNeeded: boolean, isAddExerciseBtn: string | null): InlineKeyboard {
         const keyboard = new InlineKeyboard();
         let i = 1;
         for (let b of buttons) {
@@ -67,6 +77,10 @@ export default class MarkupHelper {
                 keyboard.row();
             }
             i += 1;
+        }
+        if (isAddExerciseBtn) {
+            keyboard.row();
+            keyboard.text(isAddExerciseBtn, ADD_EXERCISE_BTN_ID);
         }
         if (isBackNeeded) {
             keyboard.row();

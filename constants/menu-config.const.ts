@@ -1,5 +1,6 @@
-import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, STARTING_MENU_ID } from "./constants";
+import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, MENU_SUFFIX, STARTING_MENU_ID } from "./constants";
 import { IMenuConfig } from "../interfaces/menu-config.interface";
+import { BODYPARTS } from "./bodypart.const";
 
 export const MENU_CONFIG: IMenuConfig = {
     id: STARTING_MENU_ID,
@@ -7,60 +8,46 @@ export const MENU_CONFIG: IMenuConfig = {
     description: 'Select bodypart to train',
     children: [
         {
-            id: 'chest__menu',
+            id: BODYPARTS.CHEST + MENU_SUFFIX,
             name: 'Chest',
             description: DEFAULT_MENU_DESCRIPTION,
-            children: [
-                {
-                    id: 'flat_bb_bench_press__menu',
-                    name: 'Flat barbell bench press',
-                    description: DEFAULT_EXERCISE_DESCRIPTION,
-                    isExercise: true,
-                },
-                {
-                    id: 'incline_df_bench_press__menu',
-                    name: 'Incline dumbbell bench press',
-                    description: DEFAULT_EXERCISE_DESCRIPTION,
-                    isExercise: true,
-                },
-                {
-                    id: 'dips__menu',
-                    name: 'Dips',
-                    description: DEFAULT_EXERCISE_DESCRIPTION,
-                    isExercise: true,
-                },
-                {
-                    id: 'cable_row__menu',
-                    name: 'Cable row',
-                    description: DEFAULT_EXERCISE_DESCRIPTION,
-                    isExercise: true,
-                },
-            ],
+            children: [],
         },
         {
-            id: 'back__menu',
+            id: BODYPARTS.BACK + MENU_SUFFIX,
             name: 'Back',
             description: DEFAULT_MENU_DESCRIPTION,
-            children: [
-                {
-                    id: 'pull_up__menu',
-                    name: 'Pull up',
-                    description: DEFAULT_EXERCISE_DESCRIPTION,
-                    isExercise: true,
-                },
-                {
-                    id: 'bb_row__menu',
-                    name: 'Barbell row',
-                    description: DEFAULT_EXERCISE_DESCRIPTION,
-                    isExercise: true,
-                },
-                {
-                    id: 'cable_row__menu',
-                    name: 'Cable row',
-                    description: DEFAULT_EXERCISE_DESCRIPTION,
-                    isExercise: true,
-                },
-            ],
+            children: [],
+        },
+        {
+            id: BODYPARTS.LEGS + MENU_SUFFIX,
+            name: 'Legs',
+            description: DEFAULT_MENU_DESCRIPTION,
+            children: [],
+        },
+        {
+            id: BODYPARTS.BICEP + MENU_SUFFIX,
+            name: 'Bicep',
+            description: DEFAULT_MENU_DESCRIPTION,
+            children: [],
+        },
+        {
+            id: BODYPARTS.TRICEP + MENU_SUFFIX,
+            name: 'Tricep',
+            description: DEFAULT_MENU_DESCRIPTION,
+            children: [],
+        },
+        {
+            id: BODYPARTS.SHOULDERS + MENU_SUFFIX,
+            name: 'Shoulders',
+            description: DEFAULT_MENU_DESCRIPTION,
+            children: [],
+        },
+        {
+            id: BODYPARTS.ACCESSORIES + MENU_SUFFIX,
+            name: 'Accessories',
+            description: DEFAULT_MENU_DESCRIPTION,
+            children: [],
         },
     ],
 };
