@@ -12,6 +12,7 @@ let lastCtxMessage: CallbackQueryContext<Context>;
 
 // COMMANDS
 bot.command(START, async (ctx) => {
+  console.log(`Got START command from user ${(await ctx.getAuthor()).user.username}`);
   await state.startWorkout(ctx.message?.from.id);
   await ctx.reply(state.getMessage(), MarkupHelper.getMenuMarkup(state));
 });
@@ -74,4 +75,6 @@ bot.on(MESSAGE, async (ctx) => {
 });
 
 //Start the Bot
-bot.start();
+bot.start().catch((e) => {
+  console.log(`Error in bot`, e);
+});
