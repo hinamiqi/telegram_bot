@@ -1,1 +1,1 @@
-export const SECRET = '7033893832:AAHaJMv8EEt45Wp2vRbZW7NZf94puaBIU00';
+export const SECRET = '7';
