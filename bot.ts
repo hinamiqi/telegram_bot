@@ -13,6 +13,10 @@ let lastCtxMessage: CallbackQueryContext<Context>;
 // COMMANDS
 bot.command(START, async (ctx) => {
   console.log(`Got START command from user ${(await ctx.getAuthor()).user.username}`);
+  if (!!state) {
+    state.stopWorkout();
+    state = new StateManager();
+  }
   await state.startWorkout(ctx.message?.from.id);
   await ctx.reply(state.getMessage(), MarkupHelper.getMenuMarkup(state));
 });

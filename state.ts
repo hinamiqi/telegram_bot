@@ -1,5 +1,4 @@
 import { UUID, randomUUID } from "crypto";
-import { BODYPARTS } from "./constants/bodypart.const";
 import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, EXERCISE_WEIGTH_DESCRIPTION, MENU_SUFFIX, STARTING_MENU_ID } from "./constants/constants";
 import { MENU_CONFIG } from "./constants/menu-config.const";
 import { IMarkup } from "./interfaces/markup.interface";
@@ -69,6 +68,10 @@ export class StateManager {
         this.setParentToChildren(this.currentMenu);
     }
 
+    async stopWorkout(): Promise<void> {
+        this.repository.disconnect();
+    }
+
     async startWorkout(userId: number | undefined): Promise<void> {
         this.userId = userId;
         if (!this.repository.isConnected) {
@@ -81,17 +84,6 @@ export class StateManager {
         await this.updateWorkout();
     }
 
-    goBack(): void {
-        if (this.currentMenu.parent) {
-            this.currentMenu = this.currentMenu.parent;
-            this.lastExerciseSetDescription = '\n';
-        }
-    }
-
-    getMessage(): string {
-        return `*Today's workout*\n\n${this.workout.toString()}\n*${this.currentMenu.name}*\n_${this.currentMenuDescription}_\n${this.lastExerciseSetDescription}`;
-    }
-
     async getCurrentMenuMarkup(): Promise<IMarkup> {
         if (this.currentMenu.isExercise) {
             return MarkupHelper.getExerciseMarkup(this);
@@ -99,19 +91,6 @@ export class StateManager {
             return MarkupHelper.getMenuMarkup(this);
         }
     }
-
-    // TODO: delete this?
-    // async loadChildrenExercises(): Promise<IMenuConfig[]> {
-    //     if (this.currentMenu.children?.length) {
-    //         return this.currentMenu.children;
-    //     }
-    //     return (await this.repository.getCategoryExercises(UtilsService.getMenuIdFromTrigger(this.currentMenu.id))).map((exercise) => ({
-    //         id: exercise.id + MENU_SUFFIX,
-    //         name: exercise.name,
-    //         description: exercise.description || DEFAULT_EXERCISE_DESCRIPTION,
-    //         isExercise: true,
-    //     }));
-    // }
 
     async selectSubMenu(menuId: string): Promise<void> {
         this.lastExerciseSetDescription = '\n';
@@ -123,7 +102,7 @@ export class StateManager {
         }
 
         if (this.currentMenu.id !== STARTING_MENU_ID) {
-            this.currentMenu.children = (await this.repository.getCategoryExercises(UtilsService.getMenuIdFromTrigger(this.currentMenu.id))).map((exercise) => ({
+            this.currentMenu.children = (await this.repository.getCategoryExercises(this.userId, UtilsService.getMenuIdFromTrigger(this.currentMenu.id))).map((exercise) => ({
                 id: UtilsService.getMenuTrigger(exercise.id),
                 name: exercise.name,
                 description: exercise.description || DEFAULT_EXERCISE_DESCRIPTION,
@@ -141,7 +120,7 @@ export class StateManager {
     }
 
     async updateWorkout(): Promise<void> {
-        const findSets = await this.repository.getCurrentWorkout();
+        const findSets = await this.repository.getCurrentWorkout(this.userId);
         this.workout.setSets(findSets);
     }
 
@@ -154,21 +133,39 @@ export class StateManager {
             reps: this.parseUserInput(userInput),
             date: new Date()
         });
-        console.log(set);
         await this.repository.saveSet(set);
+    }
+
+    async addNewExercise(exerciseName: string | undefined): Promise<void> {
+        if (!exerciseName) return;
+        await this.repository.addNewExercise({
+            id: randomUUID(),
+            name: exerciseName,
+            userId: this.userId,
+            category: UtilsService.getMenuIdFromTrigger(this.currentMenu.id), 
+        });
+        await this.selectSubMenu(this.currentMenu.id);
+    }
+
+    goBack(): void {
+        if (this.currentMenu.parent) {
+            this.currentMenu = this.currentMenu.parent;
+            this.lastExerciseSetDescription = '\n';
+        }
+    }
+
+    getMessage(): string {
+        return `*Today's workout*\n\n${this.workout.toString()}\n*${this.currentMenu.name}*\n_${this.currentMenuDescription}_\n${this.lastExerciseSetDescription}`;
     }
 
     changeWeight(userInput: string | undefined): void {
         this.currentWeight = this.parseUserInput(userInput);
+        this.toggleWeightMode();
     }
 
     toString(): string {
         const { name, description, children } = this.currentMenu;
         return `${name}\n${description}\n${children?.map(({ name }) => name).join(" ")}`;
-    }
-
-    getCurrentExercise(): void {
-        this.repository.getExerciseSets(this.currentMenu.name);
     }
 
     toggleWeightMode(): void {
@@ -177,15 +174,6 @@ export class StateManager {
 
     toggleAddExerciseMode(): void {
         this.isAddExerciseMode = !this.isAddExerciseMode;
-    }
-
-    async addNewExercise(exerciseName: string | undefined): Promise<void> {
-        if (!exerciseName) return;
-        await this.repository.addNewExercise({
-            id: randomUUID(),
-            name: exerciseName,
-            category: UtilsService.getMenuIdFromTrigger(this.currentMenu.id), 
-        });
     }
 
     private setParentToChildren(menu: IMenuConfig): void {

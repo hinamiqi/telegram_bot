@@ -56,25 +56,9 @@ export class Repository {
         console.log(`Added exercise with id ${result.insertedId}`);
     }
 
-    async getExerciseSets(exerciseName: string): Promise<void> {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const dateVal = today.getUTCDate();
+    async getCurrentWorkout(userId: number): Promise<WithId<ISet>[]> {
         const query = {
-            exerciseName: { $eq: exerciseName },
-            date: {
-                $gte: new Date(new Date().setHours(0, 0, 0)),
-            },
-        };
-        const result = this.setsCollection.find(query);
-
-        for await (const doc of result) {
-            console.log(doc);
-        }
-    }
-
-    async getCurrentWorkout(): Promise<WithId<ISet>[]> {
-        const query = {
+            userId: { $eq: userId },
             date: {
                 $gte: new Date(new Date().setHours(0, 0, 0)),
             }
@@ -118,8 +102,9 @@ export class Repository {
         return this.setsCollection.find(query2).toArray();
     }
 
-    async getCategoryExercises(category: string): Promise<WithId<IExercise>[]> {
+    async getCategoryExercises(userId: number, category: string): Promise<WithId<IExercise>[]> {
         const query = {
+            userId: { $eq: userId },
             category,
         };
         return this.exerciseCollection.find(query).toArray();
