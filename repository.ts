@@ -9,8 +9,8 @@ export class Repository {
 
     private dbName = 'gymbot-db';
 
-    private readonly SET_COLLECTION = 'sets-collection';
-    private readonly EXERCISE_COLLECTION = 'exercise-collection';
+    private readonly SET_COLLECTION = 'sets';
+    private readonly EXERCISE_COLLECTION = 'exercise';
 
     private client: MongoClient;
 
@@ -118,7 +118,7 @@ export class Repository {
         return this.setsCollection.find(query2).toArray();
     }
 
-    async getCategoryExercises(category: BODYPARTS): Promise<WithId<IExercise>[]> {
+    async getCategoryExercises(category: string): Promise<WithId<IExercise>[]> {
         const query = {
             category,
         };

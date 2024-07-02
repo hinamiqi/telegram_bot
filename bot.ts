@@ -65,7 +65,7 @@ bot.on(MESSAGE, async (ctx) => {
     if (state.isWeightMode) {
       state.changeWeight(ctx.message?.text);
     } else {
-      await state.addSet(state.currentMenu.name, ctx.message?.text)
+      await state.addSet(state.currentMenu, ctx.message?.text)
     }
   }
 
