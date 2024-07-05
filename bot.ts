@@ -3,9 +3,13 @@ import { Bot, CallbackQueryContext, Context } from "grammy";
 import { StateManager } from "./state";
 import { ADD_EXERCISE_BTN_ID, GO_BACK_BTN_ID, MENU_ITEM, MESSAGE, START, TOGGLE_MODE_ACTION } from "./constants/trigger.const";
 import MarkupHelper from "./markup-helper";
-import { SECRET } from "./constants/secret";
 
-const bot = new Bot(SECRET);
+const config = require('./config.json');
+if (!config || !config.secret) {
+  throw new Error('No bot token was provided (check ./config.json for `secret` property)');
+}
+
+const bot = new Bot(config.secret);
 let state: StateManager = new StateManager();
 
 let lastCtxMessage: CallbackQueryContext<Context>;

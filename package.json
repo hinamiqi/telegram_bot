@@ -6,6 +6,8 @@
   "scripts": {
     "start": "ts-node ./bot.ts",
     "dev": "ts-node-dev ./bot.ts",
+    "build": "npx tsc",
+    "run-build": "node ./build/bot.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
