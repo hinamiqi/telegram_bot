@@ -1,5 +1,5 @@
 import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, MENU_SUFFIX, STARTING_MENU_ID } from "./constants";
-import { IMenuConfig } from "../interfaces/menu-config.interface";
+import { IMenuConfig } from "../models/menu-config.interface";
 import { BODYPARTS } from "./bodypart.const";
 
 export const MENU_CONFIG: IMenuConfig = {

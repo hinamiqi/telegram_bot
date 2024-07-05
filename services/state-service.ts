@@ -1,19 +1,19 @@
 import { UUID, randomUUID } from "crypto";
-import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, EXERCISE_WEIGTH_DESCRIPTION, MENU_SUFFIX, STARTING_MENU_ID } from "./constants/constants";
-import { MENU_CONFIG } from "./constants/menu-config.const";
-import { IMarkup } from "./interfaces/markup.interface";
-import { IMenuConfig } from "./interfaces/menu-config.interface";
-import MarkupHelper from "./markup-helper";
-import { Repository } from "./repository";
-import { Workout } from "./workout";
-import { UtilsService } from "./utils";
+import { DEFAULT_EXERCISE_DESCRIPTION, DEFAULT_MENU_DESCRIPTION, EXERCISE_WEIGTH_DESCRIPTION, MENU_SUFFIX, STARTING_MENU_ID } from "../constants/constants";
+import { MENU_CONFIG } from "../constants/menu-config.const";
+import { IMarkup } from "../models/markup.interface";
+import { IMenuConfig } from "../models/menu-config.interface";
+import MarkupBuilder from "../builders/markup-builder";
+import { MongoRepository } from "../repositories/mongo.repository";
+import { WorkoutModel } from "../models/workout.model";
+import { UtilsService } from "./utils-service";
 
-export class StateManager {
+export class StateService {
     currentMenu: IMenuConfig;
 
-    workout: Workout;
+    workout: WorkoutModel;
 
-    repository: Repository;
+    repository: MongoRepository;
 
     isAddExerciseMode = false;
 
@@ -62,8 +62,8 @@ export class StateManager {
     }
 
     constructor() {
-        this.workout = new Workout();
-        this.repository = new Repository();
+        this.workout = new WorkoutModel();
+        this.repository = new MongoRepository();
         this.currentMenu = this.menuConfig;
         this.setParentToChildren(this.currentMenu);
     }
@@ -79,16 +79,16 @@ export class StateManager {
         }
         const lastWorkoutSets = await this.repository.getLastWorkout(this.userId);
         if (lastWorkoutSets.length) {
-            this.lastExerciseSetDescription = `Last workout: ${MarkupHelper.getWorkoutText(lastWorkoutSets)}`;
+            this.lastExerciseSetDescription = `Last workout: ${MarkupBuilder.getWorkoutText(lastWorkoutSets)}`;
         }
         await this.updateWorkout();
     }
 
     async getCurrentMenuMarkup(): Promise<IMarkup> {
         if (this.currentMenu.isExercise) {
-            return MarkupHelper.getExerciseMarkup(this);
+            return MarkupBuilder.getExerciseMarkup(this);
         } else {
-            return MarkupHelper.getMenuMarkup(this);
+            return MarkupBuilder.getMenuMarkup(this);
         }
     }
 
@@ -114,7 +114,7 @@ export class StateManager {
         if (this.currentMenu.isExercise) {
             const lastSets = await this.repository.getLastExerciseWorkout(this.userId, this.currentMenu.name);
             if (!!lastSets) {
-                this.lastExerciseSetDescription = `\nLast time: ${MarkupHelper.getRepsLine(lastSets)}`;
+                this.lastExerciseSetDescription = `\nLast time: ${MarkupBuilder.getRepsLine(lastSets)}`;
             }
         }
     }

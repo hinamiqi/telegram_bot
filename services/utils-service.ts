@@ -1,4 +1,4 @@
-import { MENU_SUFFIX } from "./constants/constants";
+import { MENU_SUFFIX } from "../constants/constants";
 
 export class UtilsService {
     static getMenuTrigger(menuId: string): string {

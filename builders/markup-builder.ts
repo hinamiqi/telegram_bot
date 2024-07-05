@@ -1,20 +1,20 @@
 import { InlineKeyboard } from "grammy";
 
-import { ADD_EXERCISE_BTN_ID, GO_BACK_BTN_ID, TOGGLE_MODE_ACTION } from "./constants/trigger.const";
-import { StateManager } from "./state";
-import { IMarkup } from "./interfaces/markup.interface";
-import { ISet } from "./interfaces/set.interface";
-import { DASH, STARTING_MENU_ID } from "./constants/constants";
+import { ADD_EXERCISE_BTN_ID, GO_BACK_BTN_ID, TOGGLE_MODE_ACTION } from "../constants/trigger.const";
+import { StateService } from "../services/state-service";
+import { IMarkup } from "../models/markup.interface";
+import { ISet } from "../models/set.interface";
+import { DASH, STARTING_MENU_ID } from "../constants/constants";
 
-export default class MarkupHelper {
-    public static getMenuMarkup(state: StateManager): IMarkup {
+export default class MarkupBuilder {
+    public static getMenuMarkup(state: StateService): IMarkup {
         let addExerciseButton = null;
         if (state.currentMenu.id !== STARTING_MENU_ID && !state.currentMenu.isExercise) {
             addExerciseButton = state.isAddExerciseMode ? 'Cancel adding' : 'Add new...';
         }
         return {
             parse_mode: "MarkdownV2",
-            reply_markup: MarkupHelper.getKeyboardWithButtonList(
+            reply_markup: MarkupBuilder.getKeyboardWithButtonList(
                 state.currentMenu.children?.map(({ id, name }) => ({ id, name })) || [],
                 !!state.currentMenu.parent,
                 addExerciseButton
@@ -22,7 +22,7 @@ export default class MarkupHelper {
         };
     }
 
-    public static getExerciseMarkup(state: StateManager): IMarkup {
+    public static getExerciseMarkup(state: StateService): IMarkup {
         const btn = state.isWeightMode
             ? ['Back to sets', TOGGLE_MODE_ACTION]
             : ['Change weight', TOGGLE_MODE_ACTION];
@@ -56,7 +56,7 @@ export default class MarkupHelper {
             exercises.set(e.exerciseName, curr.concat(e));
         }
         exercises.forEach((sets, exerciseName) => {
-            m += MarkupHelper.getExerciseLine(exerciseName, sets);
+            m += MarkupBuilder.getExerciseLine(exerciseName, sets);
         });
         if (!m.length) {
             m = DASH;
@@ -65,7 +65,7 @@ export default class MarkupHelper {
     }
 
     public static getExerciseLine(exerciseName: string, sets: ISet[]) {
-        return `*${exerciseName}* ${MarkupHelper.getRepsLine(sets)}\n`;
+        return `*${exerciseName}* ${MarkupBuilder.getRepsLine(sets)}\n`;
     }
 
     private static getKeyboardWithButtonList(buttons: { id: string; name: string }[], isBackNeeded: boolean, isAddExerciseBtn: string | null): InlineKeyboard {

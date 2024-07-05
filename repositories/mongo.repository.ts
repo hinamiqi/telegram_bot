@@ -1,10 +1,9 @@
 import { Collection, Db, MongoClient, WithId } from "mongodb";
 
-import { ISet } from "./interfaces/set.interface";
-import { IExercise } from "./interfaces/exercise.interface";
-import { BODYPARTS } from "./constants/bodypart.const";
+import { ISet } from "../models/set.interface";
+import { IExercise } from "../models/exercise.interface";
 
-export class Repository {
+export class MongoRepository {
     private uri = 'mongodb://localhost:27017';
 
     private dbName = 'gymbot-db';

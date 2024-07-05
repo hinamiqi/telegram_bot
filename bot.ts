@@ -1,8 +1,8 @@
 import { Bot, CallbackQueryContext, Context } from "grammy";
 
-import { StateManager } from "./state";
+import { StateService } from "./services/state-service";
 import { ADD_EXERCISE_BTN_ID, GO_BACK_BTN_ID, MENU_ITEM, MESSAGE, START, TOGGLE_MODE_ACTION } from "./constants/trigger.const";
-import MarkupHelper from "./markup-helper";
+import MarkupBuilder from "./builders/markup-builder";
 
 const config = require('./config.json');
 if (!config || !config.secret) {
@@ -10,7 +10,7 @@ if (!config || !config.secret) {
 }
 
 const bot = new Bot(config.secret);
-let state: StateManager = new StateManager();
+let state: StateService = new StateService();
 
 let lastCtxMessage: CallbackQueryContext<Context>;
 
@@ -19,10 +19,10 @@ bot.command(START, async (ctx) => {
   console.log(`Got START command from user ${(await ctx.getAuthor()).user.username}`);
   if (!!state) {
     state.stopWorkout();
-    state = new StateManager();
+    state = new StateService();
   }
   await state.startWorkout(ctx.message?.from.id);
-  await ctx.reply(state.getMessage(), MarkupHelper.getMenuMarkup(state));
+  await ctx.reply(state.getMessage(), MarkupBuilder.getMenuMarkup(state));
 });
 
 // bot.command("stat", async (ctx) => {

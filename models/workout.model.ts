@@ -1,8 +1,8 @@
-import { ISet } from "./interfaces/set.interface";
-import MarkupHelper from "./markup-helper";
+import { ISet } from "./set.interface";
+import MarkupBuilder from "../builders/markup-builder";
 
-// TODO remove this -- it does nothing
-export class Workout {
+// TODO
+export class WorkoutModel {
     private sets: ISet[] = [];
 
     public addSet(set: ISet): ISet {
@@ -15,6 +15,6 @@ export class Workout {
     }
 
     public toString(): string {
-        return MarkupHelper.getWorkoutText(this.sets);
+        return MarkupBuilder.getWorkoutText(this.sets);
     }
 }
