@@ -1,3 +1,5 @@
+import { DASH } from "./constants";
+
 export const getMainMessage = (
     workout: string,
     menu: string,
@@ -6,13 +8,12 @@ export const getMainMessage = (
     lastSet: string
 ) => `\
 *Today workout*
-${workout}
+${workout || DASH}
 
 *Last workout*
-${lastWorkout}
+${lastWorkout || DASH}
 
-*${menu}*
+*${menu} menu*
 _${menuDescription}_
-
 ${lastSet}
 `;

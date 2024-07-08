@@ -32,9 +32,9 @@ export default class MarkupBuilder {
         };
     }
 
-    public static getRepsLine(exerciseSets: ISet[]): string {
+    public static getRepsLine(exerciseSets: ISet[]): string | undefined {
         if (!exerciseSets.length) {
-            return `—`;
+            return;
         }
         const weights = new Map<number, ISet[]>();
         for (let s of exerciseSets) {

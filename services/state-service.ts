@@ -20,7 +20,7 @@ export class StateService {
 
     private currentWeight = 10;
 
-    private lastExerciseSetDescription: string = '\n';
+    private lastExerciseSetDescription: string = '';
 
     private lastWorkoutDesription: string;
 
@@ -96,7 +96,7 @@ export class StateService {
     }
 
     async selectSubMenu(menuId: string): Promise<void> {
-        this.lastExerciseSetDescription = '\n';
+        this.lastExerciseSetDescription = '';
         const { children } = this.currentMenu;
         const targetMenu = children?.find((c) => c.id === menuId);
 
@@ -117,7 +117,8 @@ export class StateService {
         if (this.currentMenu.isExercise) {
             const lastSets = await this.repository.getLastExerciseWorkout(this.userId, this.currentMenu.name);
             if (!!lastSets) {
-                this.lastExerciseSetDescription = `Last time: ${MarkupBuilder.getRepsLine(lastSets)}`;
+                const m = MarkupBuilder.getRepsLine(lastSets);
+                this.lastExerciseSetDescription = m && `Last time: ${m}` || '';
             }
         }
     }
@@ -153,7 +154,7 @@ export class StateService {
     goBack(): void {
         if (this.currentMenu.parent) {
             this.currentMenu = this.currentMenu.parent;
-            this.lastExerciseSetDescription = '\n';
+            this.lastExerciseSetDescription = '';
         }
     }
 
