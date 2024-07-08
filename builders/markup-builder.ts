@@ -65,7 +65,7 @@ export default class MarkupBuilder {
     }
 
     public static getExerciseLine(exerciseName: string, sets: ISet[]) {
-        return `*${exerciseName}* ${MarkupBuilder.getRepsLine(sets)}\n`;
+        return `${exerciseName} ${MarkupBuilder.getRepsLine(sets)}\n`;
     }
 
     private static getKeyboardWithButtonList(buttons: { id: string; name: string }[], isBackNeeded: boolean, isAddExerciseBtn: string | null): InlineKeyboard {

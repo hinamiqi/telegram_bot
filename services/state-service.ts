@@ -7,6 +7,7 @@ import MarkupBuilder from "../builders/markup-builder";
 import { MongoRepository } from "../repositories/mongo.repository";
 import { WorkoutModel } from "../models/workout.model";
 import { UtilsService } from "./utils-service";
+import { getMainMessage } from "../constants/templates";
 
 export class StateService {
     currentMenu: IMenuConfig;
@@ -20,6 +21,8 @@ export class StateService {
     private currentWeight = 10;
 
     private lastExerciseSetDescription: string = '\n';
+
+    private lastWorkoutDesription: string;
 
     private _isWeightMode = false;
 
@@ -79,7 +82,7 @@ export class StateService {
         }
         const lastWorkoutSets = await this.repository.getLastWorkout(this.userId);
         if (lastWorkoutSets.length) {
-            this.lastExerciseSetDescription = `Last workout: ${MarkupBuilder.getWorkoutText(lastWorkoutSets)}`;
+            this.lastWorkoutDesription = `${MarkupBuilder.getWorkoutText(lastWorkoutSets)}`;
         }
         await this.updateWorkout();
     }
@@ -114,7 +117,7 @@ export class StateService {
         if (this.currentMenu.isExercise) {
             const lastSets = await this.repository.getLastExerciseWorkout(this.userId, this.currentMenu.name);
             if (!!lastSets) {
-                this.lastExerciseSetDescription = `\nLast time: ${MarkupBuilder.getRepsLine(lastSets)}`;
+                this.lastExerciseSetDescription = `Last time: ${MarkupBuilder.getRepsLine(lastSets)}`;
             }
         }
     }
@@ -155,7 +158,13 @@ export class StateService {
     }
 
     getMessage(): string {
-        return `*Today's workout*\n\n${this.workout.toString()}\n*${this.currentMenu.name}*\n_${this.currentMenuDescription}_\n${this.lastExerciseSetDescription}`;
+        return getMainMessage(
+            this.workout.toString(),
+            this.currentMenu.name,
+            this.currentMenuDescription,
+            this.lastWorkoutDesription,
+            this.lastExerciseSetDescription
+        );
     }
 
     changeWeight(userInput: string | undefined): void {
