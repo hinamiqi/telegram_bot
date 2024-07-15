@@ -62,27 +62,22 @@ bot.callbackQuery(ADD_EXERCISE_BTN_ID, async (ctx) => {
 bot.on(MESSAGE, async (ctx) => {
   console.log(
     `${ctx.from.first_name} wrote ${
-      "text" in ctx.message ? ctx.message.text : ""
+      'text' in ctx.message ? ctx.message.text : ''
     }`,
   );
 
-  if (state.isAddExerciseMode) {
-    await state.addNewExercise(ctx.message?.text);
-    state.toggleAddExerciseMode();
-  } else if (state.currentMenu.isExercise) {
-    if (state.isWeightMode) {
-      state.changeWeight(ctx.message?.text);
-    } else {
-      await state.addSet(state.currentMenu, ctx.message?.text)
-    }
-  }
+  const isEditMessageNeeded = await state.reactToUserMessage(ctx.message?.text);
 
   await ctx.deleteMessage();
 
-  await lastCtxMessage?.editMessageText(state.getMessage(), await state.getCurrentMenuMarkup());
+  if (isEditMessageNeeded) {
+    await lastCtxMessage?.editMessageText(state.getMessage(), await state.getCurrentMenuMarkup());
+  }
 });
 
 //Start the Bot
-bot.start().catch((e) => {
+bot.start();
+
+bot.catch((e) => {
   console.log(`Error in bot`, e);
-});
+})

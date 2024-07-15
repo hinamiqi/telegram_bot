@@ -48,7 +48,8 @@ export default class MarkupBuilder {
         return lines.join('; ').concat('\\.');
     }
 
-    public static getWorkoutText(exerciseSets: ISet[]): string {
+    // Returns ESCAPED string
+    public static getWorkoutText(exerciseSets: ISet[]): string | undefined {
         let m = '';
         const exercises = new Map<string, ISet[]>();
         for (let e of exerciseSets) {
@@ -61,10 +62,17 @@ export default class MarkupBuilder {
         if (!m.length) {
             m = DASH;
         }
-        return m;
+        return MarkupBuilder.escapeReservedCharacters(m);
     }
 
-    public static getExerciseLine(exerciseName: string, sets: ISet[]) {
+    public static escapeReservedCharacters(inputString: string | undefined): string  | undefined {
+        if (!inputString) {
+            return inputString;
+        }
+        return inputString.replace(/([-\(\)])/g, '\\$1');
+    }
+
+    private static getExerciseLine(exerciseName: string, sets: ISet[]) {
         return `${exerciseName} ${MarkupBuilder.getRepsLine(sets)}\n`;
     }
 
@@ -88,5 +96,4 @@ export default class MarkupBuilder {
         }
         return keyboard;
     }
-
 }

@@ -22,7 +22,7 @@ export class StateService {
 
     private lastExerciseSetDescription: string = '';
 
-    private lastWorkoutDesription: string;
+    private lastWorkoutDesription: string | undefined;
 
     private _isWeightMode = false;
 
@@ -60,8 +60,8 @@ export class StateService {
         return this.currentMenu.description || '';
     }
 
-    get currentWeightDescription(): string {
-        return `\\(current weight: ${this.currentWeight}kg\\)`;
+    get currentWeightDescription(): string | undefined {
+        return MarkupBuilder.escapeReservedCharacters(`(current weight: ${this.currentWeight}kg)`);
     }
 
     constructor() {
@@ -117,7 +117,7 @@ export class StateService {
         if (this.currentMenu.isExercise) {
             const lastSets = await this.repository.getLastExerciseWorkout(this.userId, this.currentMenu.name);
             if (!!lastSets) {
-                const m = MarkupBuilder.getRepsLine(lastSets);
+                const m = MarkupBuilder.escapeReservedCharacters(MarkupBuilder.getRepsLine(lastSets));
                 this.lastExerciseSetDescription = m && `Last time: ${m}` || '';
             }
         }
@@ -128,16 +128,22 @@ export class StateService {
         this.workout.setSets(findSets);
     }
 
-    async addSet(currentMenu: IMenuConfig, userInput: string | undefined): Promise<void> {
+    // Should return Promise<true> if set was succesfully added
+    async addSet(currentMenu: IMenuConfig, userInput: string | undefined): Promise<boolean> {
+        const parsed = this.parseUserInput(userInput);
+        if (isNaN(parsed) || parsed < 0) { // Reps can't be negative
+            return false;
+        }
         const set = this.workout.addSet({
             userId: this.userId,
             exerciseUuid: <UUID>UtilsService.getMenuIdFromTrigger(currentMenu.id),
             exerciseName: currentMenu.name,
             weight: this.currentWeight,
-            reps: this.parseUserInput(userInput),
+            reps: parsed,
             date: new Date()
         });
         await this.repository.saveSet(set);
+        return true;
     }
 
     async addNewExercise(exerciseName: string | undefined): Promise<void> {
@@ -149,6 +155,28 @@ export class StateService {
             category: UtilsService.getMenuIdFromTrigger(this.currentMenu.id), 
         });
         await this.selectSubMenu(this.currentMenu.id);
+    }
+
+    async reactToUserMessage(messageText: string | undefined): Promise<boolean> {
+        const isAddExercise = messageText && this.isAddExerciseMode;
+        const isChangingExerciseWeight = messageText && this.currentMenu.isExercise && this.isWeightMode;
+        const isAddingSet = messageText && this.currentMenu.isExercise && !this.isWeightMode;
+
+        if (isAddExercise) {
+            await this.addNewExercise(messageText);
+            this.toggleAddExerciseMode();
+            return true;
+        }
+
+        if (isChangingExerciseWeight) {
+            return this.changeWeight(messageText);
+        }
+
+        if (isAddingSet) {
+            return await this.addSet(this.currentMenu, messageText)
+        }
+
+        return false;
     }
 
     goBack(): void {
@@ -168,9 +196,15 @@ export class StateService {
         );
     }
 
-    changeWeight(userInput: string | undefined): void {
-        this.currentWeight = this.parseUserInput(userInput);
-        this.toggleWeightMode();
+    // Should return true if weight is changed
+    changeWeight(userInput: string | undefined): boolean {
+        const parsed = this.parseUserInput(userInput);
+        if (!isNaN(parsed)) { // Weight CAN be negative
+            this.currentWeight = parsed;
+            this.toggleWeightMode();
+            return true;
+        }
+        return false;
     }
 
     toString(): string {

@@ -1,10 +1,10 @@
 import { DASH } from "./constants";
 
 export const getMainMessage = (
-    workout: string,
+    workout: string | undefined,
     menu: string,
     menuDescription: string,
-    lastWorkout: string,
+    lastWorkout: string | undefined,
     lastSet: string
 ) => `\
 *Today workout*

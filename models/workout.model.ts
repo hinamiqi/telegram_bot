@@ -14,7 +14,7 @@ export class WorkoutModel {
         this.sets = sets;
     }
 
-    public toString(): string {
+    public toString(): string | undefined {
         return MarkupBuilder.getWorkoutText(this.sets);
     }
 }
