@@ -8,6 +8,7 @@ import { MongoRepository } from "../repositories/mongo.repository";
 import { WorkoutModel } from "../models/workout.model";
 import { UtilsService } from "./utils-service";
 import { getMainMessage } from "../constants/templates";
+import { REMOVE_ALL_EXERCISES, REMOVE_ALL_SETS } from "../constants/commands.const";
 
 export class StateService {
     currentMenu: IMenuConfig;
@@ -17,6 +18,8 @@ export class StateService {
     repository: MongoRepository;
 
     isAddExerciseMode = false;
+
+    private isProductionMode = false;
 
     private currentWeight = 10;
 
@@ -64,7 +67,8 @@ export class StateService {
         return MarkupBuilder.escapeReservedCharacters(`(current weight: ${this.currentWeight}kg)`);
     }
 
-    constructor() {
+    constructor(isProductionMode = false) {
+        this.isProductionMode = isProductionMode;
         this.workout = new WorkoutModel();
         this.repository = new MongoRepository();
         this.currentMenu = this.menuConfig;
@@ -177,6 +181,41 @@ export class StateService {
         }
 
         return false;
+    }
+
+    async getAllExersises(): Promise<string> {
+        const exercises = await this.repository.getAllExercises(this.userId);
+        console.log(exercises);
+        return exercises.map((it) => it.name).join(", ");
+    }
+
+    async getAllSets(): Promise<string> {
+        const sets = await this.repository.getAllSets(this.userId);
+        return sets.map((it) => `e: ${it.exerciseName}: ${it.reps} (${it.weight})`).join(", ");
+    }
+
+    async removeAllExercises(): Promise<number> {
+        if (this.isProductionMode) {
+            console.log(`Can't execute ${REMOVE_ALL_EXERCISES} in production mode, skip command.`);
+            return 0;
+        }
+        const deleteResult = await this.repository.removeAllExersices(this.userId);
+        return deleteResult.deletedCount
+    }
+
+    async removeAllSets(): Promise<number> {
+        if (this.isProductionMode) {
+            console.log(`Can't execute ${REMOVE_ALL_SETS} in production mode, skip command.`);
+            return 0;
+        }
+        const deleteResult = await this.repository.removeAllSets(this.userId);
+        return deleteResult.deletedCount;
+    }
+
+    async getStats(): Promise<string> {
+        const exerciseCount = await this.repository.countExercises(this.userId);
+        const setsCount = await this.repository.countSets(this.userId);
+        return `Exercises: ${exerciseCount || 0}\nTotal sets performed: ${setsCount}`;
     }
 
     goBack(): void {

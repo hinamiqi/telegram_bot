@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient, WithId } from "mongodb";
+import { Collection, Db, DeleteResult, MongoClient, WithId } from "mongodb";
 
 import { ISet } from "../models/set.interface";
 import { IExercise } from "../models/exercise.interface";
@@ -107,6 +107,48 @@ export class MongoRepository {
             category,
         };
         return this.exerciseCollection.find(query).toArray();
+    }
+
+    async getAllExercises(userId: number): Promise<WithId<IExercise>[]> {
+        const query = {
+            userId: { $eq: userId }
+        };
+        return this.exerciseCollection.find(query).toArray();
+    }
+
+    async countExercises(userId: number): Promise<number> {
+        const query = {
+            userId: { $eq: userId }
+        };
+        return this.exerciseCollection.countDocuments(query);
+    }
+
+    async getAllSets(userId: number): Promise<WithId<ISet>[]> {
+        const query = {
+            userId: { $eq: userId }
+        };
+        return this.setsCollection.find(query).toArray();
+    }
+
+    async countSets(userId: number): Promise<number> {
+        const query = {
+            userId: { $eq: userId }
+        };
+        return this.setsCollection.countDocuments(query);
+    }
+
+    async removeAllExersices(userId: number): Promise<DeleteResult> {
+        const query = {
+            userId: { $eq: userId }
+        };
+        return this.exerciseCollection.deleteMany(query);
+    }
+
+    async removeAllSets(userId: number): Promise<DeleteResult> {
+        const query = {
+            userId: { $eq: userId }
+        };
+        return this.setsCollection.deleteMany(query);
     }
 
     private isCurrentDate(date: Date): boolean {
